@@ -40,39 +40,13 @@ if [ "$count" -eq 1 ]; then
    # 单网口设备 不支持修改ip 不要在此处修改ip 
    uci set network.lan.proto='dhcp'
 elif [ "$count" -gt 1 ]; then
-   # 提取第一个接口作为WAN
-   wan_ifname=$(echo "$ifnames" | awk '{print $1}')
-   # 剩余接口保留给LAN
-   lan_ifnames=$(echo "$ifnames" | cut -d ' ' -f2-)
-   # 设置WAN接口基础配置
-   uci set network.wan=interface
-   # 提取第一个接口作为WAN
-   uci set network.wan.device="$wan_ifname"
-   # WAN接口默认DHCP
-   uci set network.wan.proto='dhcp'
-   # 设置WAN6绑定网口eth0
-   uci set network.wan6=interface
-   uci set network.wan6.device="$wan_ifname"
-   # 更新LAN接口成员
-   # 查找对应设备的section名称
-   section=$(uci show network | awk -F '[.=]' '/\.@?device\[\d+\]\.name=.br-lan.$/ {print $2; exit}')
-   if [ -z "$section" ]; then
-      echo "error：cannot find device 'br-lan'." >> $LOGFILE
-   else
-      # 删除原来的ports列表
-      uci -q delete "network.$section.ports"
-      # 添加新的ports列表
-      for port in $lan_ifnames; do
-         uci add_list "network.$section.ports"="$port"
-      done
-      echo "ports of device 'br-lan' are update." >> $LOGFILE
-   fi
+  
    # LAN口设置静态IP
    uci set network.lan.proto='static'
    # 多网口设备 支持修改为别的ip地址
-   uci set network.lan.ipaddr='192.168.100.1'
+   uci set network.lan.ipaddr='192.168.1.1'
    uci set network.lan.netmask='255.255.255.0'
-   echo "set 192.168.100.1 at $(date)" >> $LOGFILE
+   echo "set 192.168.1.1 at $(date)" >> $LOGFILE
    # 判断是否启用 PPPoE
    echo "print enable_pppoe value=== $enable_pppoe" >> $LOGFILE
    if [ "$enable_pppoe" = "yes" ]; then
@@ -92,16 +66,10 @@ elif [ "$count" -gt 1 ]; then
 fi
 
 
-# 设置所有网口可访问网页终端
-uci delete ttyd.@ttyd[0].interface
-
-# 设置所有网口可连接 SSH
-uci set dropbear.@dropbear[0].Interface=''
-uci commit
 
 # 设置编译作者信息
 FILE_PATH="/etc/openwrt_release"
-NEW_DESCRIPTION="Compiled by wukongdaily"
+NEW_DESCRIPTION="Compiled by obana"
 sed -i "s/DISTRIB_DESCRIPTION='[^']*'/DISTRIB_DESCRIPTION='$NEW_DESCRIPTION'/" "$FILE_PATH"
 
 exit 0
